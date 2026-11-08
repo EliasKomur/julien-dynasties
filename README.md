@@ -19,6 +19,13 @@ La partie est sauvegardée automatiquement dans le navigateur. L'onglet Options 
 - Carte du comté générée pour chaque partie.
 
 **Jeu**
+- Calendrier de 7 jours par semaine : jours libres, événements en ville, fatigue des héros, descente le septième jour.
+- Décisions à prendre entre les descentes (rixes, duels, dettes, transfuges, galas…) avec de vraies conséquences.
+- Reliques nommées rapportées des donjons, à confier aux héros et à renforcer à la forge.
+- Personnel du hall : intendant, maître d'armes, guérisseuse, éclaireur, chroniqueur.
+- Guildes rivales vivantes : figures, histoire, faillites et nouvelles fondations.
+- Effectif en tableau triable avec filtres et comparaison de deux héros.
+- Guide « Comment jouer » intégré.
 - Ligue de 32 guildes sur 4 divisions (Ardoise, Bronze, Argent, Couronne), 14 semaines par saison, montées et descentes, la Lanterne d'Or pour le champion.
 - Coupe du Solstice : 32 guildes, élimination directe, 5 tours.
 - Chaque semaine, choix entre une descente classique et une descente périlleuse.

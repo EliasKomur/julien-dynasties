@@ -162,6 +162,25 @@ details summary{cursor:pointer;color:var(--lantern-hi);font-family:var(--f-displ
 .swatch{width:32px;height:32px;border-radius:50%;border:2px solid var(--line2);padding:0}
 .swatch[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 0 0 2px var(--lantern),0 0 14px rgba(242,168,62,.5)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,#ffd58a,#e5992f);color:var(--lantern-ink);font-weight:700;padding:9px 18px;border-radius:8px;z-index:30;font-size:.92rem;box-shadow:0 8px 30px rgba(0,0,0,.5),0 0 24px rgba(242,168,62,.35);animation:pop .2s ease-out}
+.linkbtn{background:none;border:none;padding:0;box-shadow:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.linkbtn:hover{color:var(--lantern-hi);box-shadow:none;text-decoration:underline;text-underline-offset:3px}
+.chipbtn{padding:.2em .7em;border-radius:20px;font-size:.85rem}
+.chipbtn[aria-pressed="true"]{background:rgba(242,168,62,.15);border-color:var(--lantern);color:var(--lantern-hi)}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.day{border:1px solid var(--line);border-radius:8px;padding:8px 6px;background:var(--bg2);display:flex;flex-direction:column;gap:2px;min-width:0;text-align:center}
+.day b{font-family:var(--f-display);font-size:1rem;font-weight:500}
+.day span{font-size:.72rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.day.done{opacity:.5}
+.day.now{border-color:var(--lantern);box-shadow:0 0 0 1px var(--lantern),0 0 18px rgba(242,168,62,.25)}
+.day.now b{color:var(--lantern-hi)}
+.day.delve{background:linear-gradient(180deg,rgba(224,100,74,.18),var(--bg2))}
+@media (max-width:620px){.day span{display:none}.cal{gap:4px}.day{padding:6px 2px}}
+.rar0{color:#d6cfbd}.rar1{color:var(--sky)}.rar2{color:var(--lantern-hi);text-shadow:0 0 10px rgba(242,168,62,.45)}
+.cmpgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.cmpgrid .better{color:var(--moss);font-weight:700}
+.guide h3{margin-top:4px}
+.guide p{max-width:68ch;line-height:1.6}
+.dil-opt{text-align:left;display:flex;flex-direction:column;gap:2px;padding:10px 12px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 
@@ -235,6 +254,18 @@ const SKINS=["#f1d2b6","#e6bc98","#d29f78","#b97f57","#8d5a3b","#6a4129"];
 const HAIRC=["#2b1d14","#4a2f1d","#7a4b2a","#b5763c","#d9b26b","#8c2f1e","#1c1c22","#5d5048"];
 const EYEC=["#3b5d7a","#4f6b3a","#5a3a22","#2f2f2f","#6b7f8f"];
 const CLSCOL={rempart:"#5f7a99",fendeur:"#a8473a",archer:"#5f8a4a",arcaniste:"#6c4fa3",herboriste:"#3f8f7f",rodeur:"#555a66"};
+const DAYN=["Jour de la Lune","Jour du Fer","Jour du Sel","Jour des Puits","Jour du Marché","Jour du Repos","Jour de Descente"];
+const RELIC_BASE=[{n:"Hache",e:{atk:3}},{n:"Lame",e:{atk:2,crit:.04}},{n:"Arc",e:{atk:2.5,crit:.02}},{n:"Bâton",e:{atk:1.5,heal:.15}},{n:"Cotte",e:{hp:10}},{n:"Bouclier",e:{hp:7,dr:.04}},{n:"Talisman",e:{dr:.07}},{n:"Anneau",e:{crit:.06}},{n:"Médaillon",e:{hp:4,dr:.04}},{n:"Fiole",e:{heal:.2,hp:3}}];
+const RELIC_SUF=["de Brasque","de la Veuve","du Roi-Taupe","des Moines","de l'Ermite","sans Nom","de Malpas","du Vieux Gué","des Trois Pendus","d'Ossandre","de la Mère-Ruche","des Cendres"];
+const RAR=[{n:"Commune",m:1},{n:"Rare",m:1.6},{n:"Légendaire",m:2.4}];
+const EFFN={atk:"attaque",hp:"PV",crit:"critique",heal:"soins",dr:"survie"};
+const STAFF={
+  intendant:{n:"Intendant",d:"Salaires des héros −10 %. Les voleurs ne trouvent rien.",sal:22},
+  maitre:{n:"Maître d'armes",d:"+6 % de progrès à l'entraînement, +10 % d'expérience.",sal:28},
+  guerisseuse:{n:"Guérisseuse",d:"Blessures plus courtes d'une semaine, −5 % de morts, fatigue récupérée plus vite, protège des épidémies.",sal:32},
+  eclaireur:{n:"Éclaireur",d:"Pièges et éboulements évités plus souvent, butin +15 %, estime le score adverse.",sal:26},
+  chroniqueur:{n:"Chroniqueur",d:"+1 renommée par semaine. Signe les Annales de la maison.",sal:18}
+};
 const STATN={for:"Force",adr:"Adresse",esp:"Esprit",vig:"Vigueur"};
 const CLASSES={
   rempart:{n:"Rempart",main:"vig",g:"R",d:"Encaisse les coups : les monstres le visent plus souvent. Plus de points de vie et d'armure."},
@@ -393,7 +424,8 @@ function newGameState(seed){
   S={v:1,rs:seed|0,nid:1,year:31,week:0,gold:600,renown:0,fac:{salle:0,infirm:0},focus:"repos",tactic:"equilibree",
      heroes:[],fallen:[],gone:[],guilds:[],sched:{},gazette:[],annals:[],history:null,log:[],bonds:{},friends:[],tavern:[],
      patron:null,h2h:{},lineup:[],lastReport:null,over:false,nextDg:null,seasonDeaths:[],pending:null,started:S0(),
-     cup:null,questOffers:[],market:[],offers:[],ironman:false,townPos:null,mapSeed:0};
+     cup:null,questOffers:[],market:[],offers:[],ironman:false,townPos:null,mapSeed:0,
+     day:0,weekEvent:null,weekDilemma:false,dilemma:null,inventory:[],staff:{},staffPool:null,rec:{},buff:1,relicShop:null};
   function S0(){return Date.now();}
 }
 function finalizeGuild(cfg,chosen){
@@ -414,7 +446,8 @@ function finalizeGuild(cfg,chosen){
   resetStandings(); makeSchedules(); genHistory();
   S.patron={name:pick(PATRONS),conf:3,target:4,goal:""}; setPatronGoal();
   S.ironman=!!cfg.ironman;
-  refreshTavern(true); genMap(); newCup(); refreshQuests(); refreshMarket(true);
+  refreshTavern(true); genMap(); newCup(); refreshQuests(); refreshMarket(true); refreshStaffPool();
+  for(const g of S.guilds){if(g.isP)continue; g.star=makeStar(g); g.hist=[`Membre de la Ligue depuis la saison ${ri(1,S.year-1)}`];}
   newDgs(4);
   news(`${cfg.name} est admise dans la Ligue des Lanternes, division Ardoise. Son mécène : ${S.patron.name}.`,"me");
   chron("found",`La guilde ${cfg.name} est fondée à ${cfg.town} pour la ${S.year}e saison de la Ligue des Lanternes.`);
@@ -448,6 +481,8 @@ function combatStats(h){
   let atk=main*0.9+h.gear.w*2.5+h.lvl*1.2;
   let hp=20+h.st.vig*2+h.lvl*3+h.gear.a*5+(h.cls==="rempart"?12:0);
   if(has(h,"robuste"))hp*=1.15; if(has(h,"fragile"))hp*=0.85;
+  const e=heroEff(h); atk+=e.atk; hp+=e.hp;
+  const fa=h.fat||0; if(fa>85){atk*=.8;hp*=.85;} else if(fa>60){atk*=.9;hp*=.92;}
   return {atk,hp:Math.round(hp),arm:h.gear.a*1.5+(h.cls==="rempart"?2:0)};
 }
 function runDescent(party,tactic,dg){
@@ -470,9 +505,10 @@ function runDescent(party,tactic,dg){
     if(dg.cond==="eboulis"&&has(p.h,"claustro"))m*=0.85;
     if(SY.lame&&p.cls==="fendeur")m*=1.15;
     if(p.h.fear!=null&&FEARS[p.h.fear]&&FEARS[p.h.fear].c===dg.cond)m*=0.9;
+    m*=S.buff||1;
     return m;
   };
-  const crit=(p)=>(p.cls==="rodeur"?.25:.07)+(has(p.h,"chanceux")?.05:0)+(SY.oeil?.10:0);
+  const crit=(p)=>(p.cls==="rodeur"?.25:.07)+(has(p.h,"chanceux")?.05:0)+(SY.oeil?.10:0)+heroEff(p.h).crit;
   const onDown=(p,by)=>{
     p.hp=0;p.down=true;p.downBy=by;anyDown=true;
     say(`${p.name} s'effondre sous les coups de ${by} !`,"bad",{down:P.indexOf(p)});
@@ -486,7 +522,7 @@ function runDescent(party,tactic,dg){
         const live=foes.filter(f=>f.hp>0); if(!live.length)break;
         if(p.cls==="herboriste"){
           const hurt=standing().filter(q=>q.hp<q.max*0.55).sort((a,b)=>a.hp/a.max-b.hp/b.max)[0];
-          if(hurt){let amt=Math.round((8+p.h.st.esp*0.7+p.h.lvl)*(SY.source?1.3:1)); hurt.hp=Math.min(hurt.max,hurt.hp+amt); say(`${p.name} panse ${hurt===p?"ses propres plaies":hurt.name} (+${amt}).`,"heal",{heal:{to:P.indexOf(hurt),amt}}); continue;}
+          if(hurt){let amt=Math.round((8+p.h.st.esp*0.7+p.h.lvl)*(SY.source?1.3:1)*(1+heroEff(p.h).heal)); hurt.hp=Math.min(hurt.max,hurt.hp+amt); say(`${p.name} panse ${hurt===p?"ses propres plaies":hurt.name} (+${amt}).`,"heal",{heal:{to:P.indexOf(hurt),amt}}); continue;}
         }
         const t=pick(live); let d=p.atk*(0.75+rnd()*0.5)*mods(p); let c=false;
         if(rnd()<crit(p)){d*=1.7;c=true;}
@@ -539,7 +575,7 @@ function runDescent(party,tactic,dg){
     if(!standing().length){res.wiped=true;break;}
     res.cleared=r+1;
     if(dg.cond==="spores"){for(const p of standing()){if(p.cls==="herboriste"||has(p.h,"devot"))continue; if(ri(1,20)>p.h.st.esp){p.hp-=5; if(p.hp<=0)onDown(p,"les spores"); else say(`${p.name} respire les spores (−5).`,"hit");}}}
-    if(dg.cond==="eboulis"&&chance(.5)){const p=pick(standing()); if(p){ if(ri(1,20)>p.h.st.vig){p.hp-=9; if(p.hp<=0)onDown(p,"un éboulement"); else say(`Des pierres tombent sur ${p.name} (−9).`,"hit");} else say(`Des pierres tombent ; ${p.name} les évite.`);}}
+    if(dg.cond==="eboulis"&&chance(.5)){const p=pick(standing()); if(p){ if(ri(1,20)>p.h.st.vig+(S.staff&&S.staff.eclaireur?4:0)){p.hp-=9; if(p.hp<=0)onDown(p,"un éboulement"); else say(`Des pierres tombent sur ${p.name} (−9).`,"hit");} else say(`Des pierres tombent ; ${p.name} les évite.`);}}
     if(!standing().length){res.wiped=true;break;}
     if(room.type==="boss")break;
     const downs=P.filter(p=>p.down).length;
@@ -550,8 +586,8 @@ function runDescent(party,tactic,dg){
     const st=standing(); const find=c=>st.find(p=>p.cls===c); const tr=x=>st.find(p=>has(p.h,x));
     if(t==="coffre"){
       const r=find("rodeur"), a=tr("avide");
-      if(r){const g=ri(30,70);res.loot+=g;say(`Un coffre scellé. ${r.name} désamorce le piège et l'ouvre : ${g} pièces.`,"ev");}
-      else if(a){const g=ri(20,60);res.loot+=g; if(chance(.5)){a.hp-=8; say(`Un coffre scellé. ${a.name} n'attend personne, l'ouvre et prend une aiguille empoisonnée (−8), mais empoche ${g} pièces.`,"ev"); if(a.hp<=0)onDown(a,"un piège");} else say(`Un coffre scellé. ${a.name} le force sans dommage : ${g} pièces.`,"ev");}
+      if(r){const g=ri(30,70);res.loot+=g;res.chest=true;say(`Un coffre scellé. ${r.name} désamorce le piège et l'ouvre : ${g} pièces.`,"ev");}
+      else if(a){const g=ri(20,60);res.loot+=g;res.chest=true; if(chance(.5)){a.hp-=8; say(`Un coffre scellé. ${a.name} n'attend personne, l'ouvre et prend une aiguille empoisonnée (−8), mais empoche ${g} pièces.`,"ev"); if(a.hp<=0)onDown(a,"un piège");} else say(`Un coffre scellé. ${a.name} le force sans dommage : ${g} pièces.`,"ev");}
       else say("Un coffre scellé, sans doute piégé. Personne ne sait l'ouvrir ; le groupe passe son chemin.","ev");
     } else if(t==="prisonnier"){
       const k=tr("loyal")||tr("devot");
@@ -575,7 +611,7 @@ function runDescent(party,tactic,dg){
       else say("Des champignons luisants. Le groupe les contourne.","ev");
     } else if(t==="piege"){
       const p=pick(st); if(!p)return;
-      if(ri(1,20)<=p.h.st.adr)say(`Une dalle s'enfonce sous ${p.name}, qui saute à temps.`,"ev");
+      if(ri(1,20)<=p.h.st.adr+(S.staff&&S.staff.eclaireur?4:0))say(`Une dalle s'enfonce sous ${p.name}, qui saute à temps.`,"ev");
       else {p.hp-=10; say(`Une dalle s'enfonce sous ${p.name} : fosse à pieux (−10).`,"bad",{hurt:{to:P.indexOf(p),dmg:10}}); if(p.hp<=0)onDown(p,"une fosse à pieux");}
     }
   }
@@ -584,13 +620,16 @@ function runDescent(party,tactic,dg){
   for(const p of P.filter(p=>p.down)){
     let dc={prudente:.22,equilibree:.32,agressive:.42}[tactic];
     if(has(p.h,"temeraire"))dc+=.05; if(has(p.h,"maudit"))dc+=.1; if(has(p.h,"robuste"))dc-=.1; if(has(p.h,"chanceux"))dc-=.1;
-    if(healer)dc-=.15; dc-=S.fac.infirm*.05; if(res.wiped)dc+=.2;
+    if(healer)dc-=.15; dc-=S.fac.infirm*.05+heroEff(p.h).dr+(S.staff&&S.staff.guerisseuse?.05:0); if(res.wiped)dc+=.2;
     dc=clamp(dc,.04,.85);
     if(chance(dc))res.deaths.push({id:p.id,by:p.downBy,room:res.cleared+1});
-    else {res.injured.push({id:p.id,w:Math.max(1,ri(1,3)-S.fac.infirm)}); if(chance(.4))res.scarred.push(p.id);}
+    else {res.injured.push({id:p.id,w:Math.max(1,ri(1,3)-S.fac.infirm-(S.staff&&S.staff.guerisseuse?1:0))}); if(chance(.4))res.scarred.push(p.id);}
   }
   if(res.wiped)say("Plus personne ne tient debout. Les secours de la Ligue remontent ce qu'ils peuvent.","bad");
   else if(res.boss)say("L'expédition remonte, victorieuse.","good");
+  res.drops=[];
+  if(res.boss&&chance(.7))res.drops.push({src:BOSSES[dg.boss].n,b:dg.peril?.12:0});
+  if(res.chest&&chance(.3))res.drops.push({src:dg.name,b:0});
   res.score=Math.max(0,res.cleared*10+(res.boss?30:0)+Math.round(res.loot/5)-res.deaths.length*15);
   res.T=T; res.syn=syn;
   return res;
@@ -618,11 +657,13 @@ function playWeek(){
   let res;
   if(!party.length){res={T:[{text:"Aucun héros valide : la guilde déclare forfait.",kind:"bad",hp:[]}],score:0,cleared:0,boss:false,loot:0,deaths:[],injured:[],scarred:[],retreat:false,wiped:false,P:[],syn:[]};}
   else res=runDescent(party,S.tactic,dg);
+  S.buff=1;
   const oppScore=aiScore(opp);
   record(0,oppId,res.score,oppScore);
   const out=Math.abs(res.score-oppScore)<=2?"draw":res.score>oppScore?"win":"loss";
   if(out==="loss")S.h2h[oppId]=(S.h2h[oppId]||0)+1;
   const derby=opp.town===pg().town;
+  S.rec[oppId]=S.rec[oppId]||{w:0,d:0,l:0}; S.rec[oppId][out==="win"?"w":out==="loss"?"l":"d"]++;
   // Autres rencontres
   let upset=null;
   for(const d of [1,2,3,4]){for(const [a,b] of S.sched[d][S.week]){ if(a===0||b===0)continue; const sa=aiScore(G(a)),sb=aiScore(G(b)); record(a,b,sa,sb);
@@ -631,17 +672,17 @@ function playWeek(){
   let cupRep=null;
   if(S.cup&&S.cup.winner==null&&CUPWEEKS[S.cup.round]===S.week)cupRep=playCupRound(res.score);
   // Conséquences sur les héros
-  const rep={week:S.week+1,year:S.year,dg:dg.name,opp:opp.name,oppId,score:res.score,oppScore,out,cleared:res.cleared,rooms:dg.rooms.length,boss:res.boss,bossName:dg.rooms.length?BOSSES[dg.boss].n:"",loot:res.loot,deaths:[],injured:[],scars:[],levels:[],virtues:[],retreat:res.retreat,wiped:res.wiped,income:0,salaries:0,cup:cupRep,derby,quests:[],dreams:[]};
+  const rep={week:S.week+1,year:S.year,dg:dg.name,opp:opp.name,oppId,score:res.score,oppScore,out,cleared:res.cleared,rooms:dg.rooms.length,boss:res.boss,bossName:dg.rooms.length?BOSSES[dg.boss].n:"",loot:res.loot,deaths:[],injured:[],scars:[],levels:[],virtues:[],retreat:res.retreat,wiped:res.wiped,income:0,salaries:0,cup:cupRep,derby,quests:[],dreams:[],relics:[]};
   const partyIds=party.map(h=>h.id);
   const mentor=party.some(h=>has(h,"mentor"));
   for(const p of res.P){
-    const h=p.h; h.descents++; h.kills+=p.kills;
-    let xp=25+res.cleared*8+(res.boss?25:0); if(mentor&&!has(h,"mentor"))xp*=1.25; if(has(h,"prodige"))xp*=1.5;
+    const h=p.h; h.descents++; h.kills+=p.kills; h.fat=clamp((h.fat||0)+18+res.cleared*3+(dg.peril?6:0),0,100);
+    let xp=25+res.cleared*8+(res.boss?25:0); if(mentor&&!has(h,"mentor"))xp*=1.25; if(has(h,"prodige"))xp*=1.5; if(S.staff&&S.staff.maitre)xp*=1.1;
     if(!res.deaths.find(d=>d.id===h.id)){h.xp+=Math.round(xp); rep.levels.push(...levelUps(h));}
     if(h._bossKill){delete h._bossKill; h.bossKills++; const v=`Fléau de ${BOSSES[dg.boss].n}`; if(!h.virtues.includes(v)){h.virtues.push(v); rep.virtues.push(`${h.name} : ${v}`); hist(h,`porte le coup fatal à ${BOSSES[dg.boss].n}.`); chron("virtue",`${h.name} abat ${BOSSES[dg.boss].n} dans ${dg.name}.`,h.id);}}
   }
   for(const d of res.deaths){
-    const h=hero(d.id); h.alive=false;
+    const h=hero(d.id); unequip(h); h.alive=false;
     const ep=EPIT[h.traits.find(t=>EPIT[t])]||"La guilde se souvient.";
     const f={id:h.id,age:h.age,scars:h.scars.slice(),morale:30,name:h.name,surname:h.surname,cls:h.cls,sex:h.sex,born:h.town,joined:h.joined,died:S.year,week:S.week+1,where:dg.name,room:d.room,by:d.by,lvl:h.lvl,kills:h.kills,descents:h.descents,ep,title:title(h),virtues:h.virtues.slice()};
     S.fallen.push(f); S.seasonDeaths.push(h.name); rep.deaths.push(h.name);
@@ -649,6 +690,7 @@ function playWeek(){
     chron("death",`${h.name} (${CLASSES[h.cls].n}) tombe dans ${dg.name}, salle ${d.room}, sous les coups de ${d.by}.`,h.id);
     for(const o of S.heroes.filter(x=>x.alive)){const fr=areFriends(o.id,h.id); o.morale=clamp(o.morale-(fr?22:8),has(o,"loyal")?40:0,100); if(fr)hist(o,`perd ${ag(h,"son ami","son amie")} ${h.name}.`);}
   }
+  for(const d of (res.drops||[])){const it=makeRelic(d.src,d.b); S.inventory.push(it); rep.relics.push(`${it.name} (${RAR[it.rar].n.toLowerCase()})`); chron("relic",`La guilde rapporte ${it.name} de ${d.src}.`); if(it.rar===2)news(`${pg().name} rapporte une relique légendaire : ${it.name}.`,"me");}
   for(const i of res.injured){const h=hero(i.id); h.inj=i.w; h.nearDeaths++; rep.injured.push(`${h.name} (${i.w} sem.)`); hist(h,`est ramené${ag(h,"","e")} inconscient${ag(h,"","e")} de ${dg.name}.`);}
   for(const id of res.scarred){const h=hero(id); const sc=pick(SCARS.filter(s=>!h.scars.includes(s.n))||SCARS); if(!sc)continue; h.scars.push(sc.n); h.st[sc.s]=Math.max(1,h.st[sc.s]-2); rep.scars.push(`${h.name} : ${sc.n}`); hist(h,`garde une séquelle : ${sc.n}.`); chron("scar",`${h.name} revient de ${dg.name} avec une séquelle : ${sc.n}.`,h.id);}
   S.heroes=S.heroes.filter(h=>h.alive);
@@ -670,19 +712,20 @@ function playWeek(){
     if(h.inj>0){h.inj=Math.max(0,h.inj-(S.focus==="repos"?2:1)); continue;}
     if(h.quest)continue;
     if(S.focus==="repos"){h.morale=clamp(h.morale+3,0,100);continue;}
-    const p=.07+S.fac.salle*.04+(h.age<24?.04:0);
+    const p=.07+S.fac.salle*.04+(h.age<24?.04:0)+(S.staff&&S.staff.maitre?.06:0);
     if(chance(p)&&h.st[S.focus]<20){h.st[S.focus]++; hist(h,`gagne +1 en ${STATN[S.focus]} à l'entraînement.`);}
   }
   // Finances
-  const income=PATRONPAY[div]+(out==="win"?30:out==="draw"?10:0)+Math.round(res.loot*0.6);
-  const sal=S.heroes.reduce((s,h)=>s+h.sal,0);
+  const income=PATRONPAY[div]+(out==="win"?30:out==="draw"?10:0)+Math.round(res.loot*0.6*(S.staff&&S.staff.eclaireur?1.15:1));
+  const sal=Math.round(S.heroes.reduce((s,h)=>s+h.sal,0)*(S.staff&&S.staff.intendant?.9:1))+staffCost();
   S.gold+=income-sal; rep.income=income; rep.salaries=sal;
-  S.renown+=out==="win"?3:out==="draw"?1:0; if(res.boss)S.renown+=2;
+  S.renown+=out==="win"?3:out==="draw"?1:0; if(res.boss)S.renown+=2; if(S.staff&&S.staff.chroniqueur)S.renown+=1;
   if(res.freed){const h=makeHero({}); h.fee=0; S.tavern.unshift(h); news(`L'ancien prisonnier ${h.name} attend à la taverne, prêt à signer gratuitement.`,"me");}
   if(rep.deaths.length)news(`Deuil chez ${pg().name} : ${rep.deaths.join(", ")}.`,"me");
   news(`${pg().name} ${out==="win"?"bat":out==="loss"?"s'incline face à":"fait jeu égal avec"} ${opp.name} (${res.score} – ${oppScore}).`,"me");
   if(S.gold<0)news(`Les coffres de ${pg().name} sont vides. ${S.patron.name} s'inquiète.`,"me");
   tickQuests(rep); tickOffers(); refreshMarket(false); refreshQuests(); checkDreams(rep);
+  S.day=0; S.weekEvent=null; S.weekDilemma=false; S.relicShop=null;
   S.lastReport=rep;
   S.week++;
   S.lineup=S.lineup.filter(id=>hero(id));
@@ -705,6 +748,11 @@ function endSeason(){
   // Montées / descentes
   for(const d of [2,3,4]){const t=tables[d]; t[0].div=d-1; t[1].div=d-1; news(`${t[0].name} et ${t[1].name} montent en ${DIVN[d-1]}.`);}
   for(const d of [1,2,3]){const t=tables[d]; t[6].div=d+1; t[7].div=d+1;}
+  (champ.hist=champ.hist||[]).push(`Lanterne d'Or, saison ${S.year}`);
+  for(const d of [2,3,4]){for(const g of tables[d].slice(0,2))(g.hist=g.hist||[]).push(`Montée en ${DIVN[d-1]}, saison ${S.year}`);}
+  for(const d of [1,2,3]){for(const g of tables[d].slice(6))(g.hist=g.hist||[]).push(`Descente en ${DIVN[d+1]}, saison ${S.year}`);}
+  if(S.cup&&S.cup.winner!=null){const cg=G(S.cup.winner);(cg.hist=cg.hist||[]).push(`Coupe du Solstice, saison ${S.year}`);}
+  rivalsAge(tables);
   // Mécène
   const ok=pos<=S.patron.target;
   const oldConf=S.patron.conf;
@@ -757,6 +805,7 @@ function seasonProse(A){
   if(A.rival)parts.push(`${A.rival.name} sont restés la bête noire de la maison, avec ${A.rival.n} victoires sur elle.`);
   parts.push(A.ok?`${S.patron.name.split(",")[0]} jugea l'objectif tenu (« ${A.goal} »).`:`${S.patron.name.split(",")[0]} attendait mieux (« ${A.goal} »).`);
   if(A.outcome!=="title"&&A.champ)parts.push(`La Lanterne d'Or est revenue ${aG(A.champ)}.`);
+  if(S.staff&&S.staff.chroniqueur)parts.push(`Ces lignes ont été consignées par ${S.staff.chroniqueur.name}, chroniqueur de la maison.`);
   if(A.cup){ if(A.cup.mine)parts.push("La guilde a aussi soulevé la Coupe du Solstice.");
     else parts.push(`En Coupe du Solstice, ${A.cup.best===0?"elle est tombée dès les seizièmes":`elle a atteint les ${CUPN[A.cup.best].toLowerCase()}`}${A.cup.winner?` ; le trophée est revenu ${aG(A.cup.winner)}`:""}.`);}
   return parts.join(" ");
@@ -767,12 +816,14 @@ function startNewSeason(){
   S.year++; S.week=0; S.seasonDeaths=[]; S.h2h={};
   resetStandings(); makeSchedules(); setPatronGoal();
   refreshTavern(true); newDgs(pg().div);
-  newCup(); refreshQuests(); refreshMarket(true); S.offers=[];
+  newCup(); refreshQuests(); refreshMarket(true); S.offers=[]; refreshStaffPool();
+  S.day=0; S.weekEvent=null; S.weekDilemma=false; S.dilemma=null;
   S.lineup=S.lineup.filter(id=>hero(id));
   news(`La ${S.year}e saison de la Ligue des Lanternes commence. Objectif de ${S.patron.name.split(",")[0]} : ${S.patron.goal}.`,"me");
   S.pending=null; save();
 }
 function leaveGuild(h,why,toId){
+  unequip(h);
   const to=toId!=null?G(toId):pick(S.guilds.filter(g=>!g.isP));
   S.heroes=S.heroes.filter(x=>x!==h); S.lineup=S.lineup.filter(id=>id!==h.id);
   S.gone.push({name:h.name,sex:h.sex,cls:h.cls,why,year:S.year,to:to.id,lvl:h.lvl,descents:h.descents});
@@ -788,7 +839,7 @@ function levelUps(h){
   return out;
 }
 function buryHero(h,where,by){
-  h.alive=false;
+  unequip(h); h.alive=false;
   const ep=EPIT[h.traits.find(t=>EPIT[t])]||"La guilde se souvient.";
   S.fallen.push({id:h.id,age:h.age,scars:h.scars.slice(),morale:30,name:h.name,surname:h.surname,cls:h.cls,sex:h.sex,born:h.town,joined:h.joined,died:S.year,week:S.week+1,where,room:null,by,lvl:h.lvl,kills:h.kills,descents:h.descents,ep,title:title(h),virtues:h.virtues.slice()});
   S.seasonDeaths.push(h.name);
@@ -847,6 +898,7 @@ function tickQuests(rep){
     if(!h.quest)continue;
     h.quest.left--; if(h.quest.left>0)continue;
     const q=h.quest; h.quest=null;
+    if(q.leave){h.morale=clamp(h.morale+22,0,100); hist(h,`revient de permission, le cœur léger.`); const t=`${h.name} revient de permission.`; rep&&rep.quests.push(t); continue;}
     if(chance(questChance(h,q))){
       S.gold+=q.gold; S.renown+=q.renown; h.xp+=q.xp; levelUps(h); h.morale=clamp(h.morale+5,0,100);
       hist(h,`réussit : ${q.title} (+${q.gold} or).`);
@@ -965,6 +1017,155 @@ function records(){
   const best=k=>all.slice().sort((a,b)=>b[k]-a[k])[0];
   return all.length?[["Monstres abattus",best("kills"),"kills"],["Descentes",best("descents"),"descents"],["Niveau",best("lvl"),"lvl"],["Gardiens",best("boss"),"boss"]].filter(r=>r[1]&&r[1][r[2]]>0):[];
 }
+
+/* ---------- Reliques ---------- */
+function makeRelic(src,bias){
+  const b=pick(RELIC_BASE); const r=chance(.07+(bias||0))?2:chance(.3+(bias||0))?1:0;
+  return {id:S.nid++,name:b.n+" "+pick(RELIC_SUF),base:b.e,rar:r,lvl:0,from:src,year:S.year,holder:null};
+}
+function relicEff(it){const m=RAR[it.rar].m*(1+.35*it.lvl); const o={}; for(const k in it.base)o[k]=it.base[k]*m; return o;}
+function relicText(it){return Object.entries(relicEff(it)).map(([k,v])=>k==="atk"||k==="hp"?`+${v.toFixed(1).replace(".0","")} ${EFFN[k]}`:`+${Math.round(v*100)} % ${EFFN[k]}`).join(", ");}
+function heroEff(h){
+  const o={atk:0,hp:0,crit:0,heal:0,dr:0};
+  if(h&&h.relic!=null&&S&&S.inventory){const it=S.inventory.find(x=>x.id===h.relic); if(it){const e=relicEff(it); for(const k in e)o[k]+=e[k];}}
+  return o;
+}
+function unequip(h){if(!h||h.relic==null)return; const it=S.inventory.find(x=>x.id===h.relic); if(it)it.holder=null; h.relic=null;}
+function equip(h,itemId){
+  const it=S.inventory.find(x=>x.id===itemId); if(!it||!h)return;
+  if(it.holder!=null&&it.holder!==h.id){const o=hero(it.holder); if(o)o.relic=null;}
+  unequip(h); it.holder=h.id; h.relic=it.id; hist(h,`porte désormais ${it.name}.`);
+}
+const forgeCost=it=>[120,260][it.lvl];
+const sellValue=it=>Math.round(40*(it.rar+1)*(it.lvl+1));
+
+/* ---------- Personnel ---------- */
+function refreshStaffPool(){
+  S.staffPool={};
+  for(const k of Object.keys(STAFF)){const f=chance(.5); S.staffPool[k]={name:pick(f?FN_F:FN_M)+" "+pick(SURN),sex:f?"f":"m",sal:STAFF[k].sal+ri(-3,4)};}
+}
+function staffCost(){return Object.values(S.staff||{}).reduce((s,x)=>s+x.sal,0);}
+
+/* ---------- Guildes rivales ---------- */
+function makeStar(g){const f=chance(.5); return {name:pick(f?FN_F:FN_M)+" "+pick(SURN),sex:f?"f":"m",cls:pick(Object.keys(CLASSES)),lvl:ri(2,4)+(4-g.div),age:ri(22,31)};}
+function rivalsAge(tables){
+  for(const g of S.guilds){
+    if(g.isP)continue; if(!g.star)g.star=makeStar(g);
+    const st=g.star; st.age++; if(chance(.6))st.lvl++;
+    if(st.age>=35&&chance(.4)){news(`${st.name}, figure de ${g.name}, raccroche les armes.`); (g.hist=g.hist||[]).push(`Retraite de ${st.name}, saison ${S.year}`); g.star=makeStar(g);}
+    else if(chance(.04)){news(`${st.name}, figure de ${g.name}, meurt dans une descente.`); (g.hist=g.hist||[]).push(`Mort de ${st.name}, saison ${S.year}`); g.star=makeStar(g); g.st=clamp(g.st-3,15,92);}
+  }
+  for(const g of tables[4].slice(6)){
+    if(g.isP||g.st>=32||!chance(.4))continue;
+    const old=g.name, used=new Set(S.guilds.map(x=>x.name)); let name,town,k=0;
+    do{name=pick(GNOUNS);town=pick(TOWNS);k++;}while(k<50&&used.has(name+" "+deTown(town)));
+    Object.assign(g,{name:name+" "+deTown(town),town,hue:ri(0,359),st:DIVSTR[4]+ri(-4,6),titles:0,cups:0,master:null,hist:[`Fondée pour la saison ${S.year+1}, à la place ${old.startsWith("Les ")?"des "+old.slice(4):old.startsWith("La ")?"de la "+old.slice(3):"de "+old}`]});
+    g.star=makeStar(g); delete S.rec[g.id];
+    news(`${old} fait faillite. ${g.name} prend sa place en Ardoise.`); chron("fold",`${old} disparaît de la Ligue ; ${g.name} est fondée à ${town}.`);
+  }
+}
+
+/* ---------- Calendrier et événements de la ville ---------- */
+const CITY=[
+  {t:"Foire de la Saint-Ourle",f(){for(let i=0;i<2;i++){const h=makeHero({allowKin:true});h.fee=Math.round((h.sal*4+20)*.6);S.tavern.push(h);}return "La foire attire des aventuriers de tout le comté : deux recrues de plus à la taverne, à prix d'ami.";}},
+  {t:"Grand orage",f(){const d=S.dgOpts[0];d.cond="eboulis";return `L'orage fait trembler les galeries : ${d.name} sera sujette aux éboulis.`;}},
+  {t:"Fièvre des puits",f(){if(S.staff.guerisseuse)return "La fièvre des puits frappe la ville, mais votre guérisseuse protège la guilde.";const h=pick(S.heroes.filter(x=>x.inj===0&&!x.quest));if(!h)return "La fièvre des puits frappe la ville ; la guilde est épargnée.";h.inj=1;return `La fièvre des puits frappe la ville. ${h.name} est alité${ag(h,"","e")} pour une semaine.`;}},
+  {t:"Fête du Sel",f(){if(S.gold<30)return "La Fête du Sel bat son plein, mais la guilde n'a pas de quoi offrir une tournée.";S.gold-=30;for(const h of S.heroes)h.morale=clamp(h.morale+6,0,100);return "La guilde offre une tournée pour la Fête du Sel (−30 or). Le moral remonte.";}},
+  {t:"Visite du Conseil",f(){const pos=sortDiv(pg().div).indexOf(pg())+1;if(pos<=3){S.renown+=3;return "Le Conseil des Lanternes salue votre saison : +3 renommée.";}return "Le Conseil des Lanternes passe sans s'arrêter devant votre porte.";}},
+  {t:"Marchand ambulant",f(){const it=makeRelic("un marchand ambulant",.1);it.price=Math.round(90*RAR[it.rar].m);S.relicShop=it;return `Un marchand propose ${it.name} (${RAR[it.rar].n.toLowerCase()}) pour ${it.price} or. Offre valable à l'Armurerie jusqu'à la descente.`;}},
+  {t:"Voleurs",f(){if(S.staff.intendant)return "Des voleurs rôdent autour du hall, mais l'intendant a tout mis sous clé.";const l=Math.round(Math.max(0,S.gold)*.06);S.gold-=l;return `Des voleurs forcent la réserve : ${l} or envolés.`;}},
+  {t:"Pèlerins de Valcrose",f(){let n=0;for(const h of S.heroes)if(h.inj>0){h.inj--;n++;}return n?`Des pèlerins soignent les blessés : ${n} héros guéri${n>1?"s":""} plus vite.`:"Des pèlerins passent bénir le hall.";}},
+  {t:"Joute des apprentis",f(){const h=pick(S.heroes.filter(x=>x.age<25));if(!h)return "La joute des apprentis se tient sans vos couleurs.";h.xp+=40;levelUps(h);return `${h.name} brille à la joute des apprentis (+40 XP).`;}}
+];
+function advanceDay(){
+  if(S.day>=6)return;
+  S.day++;
+  for(const h of S.heroes)h.fat=Math.max(0,(h.fat||0)-(S.focus==="repos"?10:6)-(S.staff.guerisseuse?3:0));
+  if(!S.weekEvent&&chance(.16)){const ev=pick(CITY); const txt=ev.f(); S.weekEvent={t:ev.t,txt,day:S.day}; news(`${ev.t} : ${txt}`,"me");}
+  if(!S.weekDilemma&&!S.dilemma&&chance(.2)){const d=rollDilemma(); if(d){S.dilemma=d; S.weekDilemma=true;}}
+  save();
+}
+function calStrip(){
+  const lineup=S.lineup.map(hero).filter(available).length;
+  return `<div class="panel stack"><div class="spread"><div><span class="label">Semaine ${S.week+1} sur 14</span><h3>${DAYN[S.day]}</h3></div>
+    <div class="row">${S.dilemma?`<button class="primary" data-a="opendil">Une décision vous attend</button>`:""}
+    <button data-a="nextday" ${S.day>=6||S.dilemma?"disabled":""}>Jour suivant</button>
+    <button class="${S.day>=6&&!S.dilemma?"primary":""}" data-a="${S.day>=6?"tab":"skipdays"}" data-t="descente" ${S.dilemma?"disabled":""}>${S.day>=6?"Préparer la descente":"Aller au jour de descente"}</button></div></div>
+    <div class="cal">${DAYN.map((n,i)=>`<div class="day ${i<S.day?"done":""} ${i===S.day?"now":""} ${i===6?"delve":""}"><b>${i+1}</b><span>${n.replace("Jour ","").replace("de la ","").replace("du ","").replace("des ","").replace("de ","")}</span>${S.weekEvent&&S.weekEvent.day===i?`<span style="color:var(--lantern-hi)">${esc(S.weekEvent.t)}</span>`:""}</div>`).join("")}</div>
+    ${S.weekEvent?`<p class="small"><b>${esc(S.weekEvent.t)}.</b> ${esc(S.weekEvent.txt)}</p>`:`<p class="small muted">Les jours libres reposent les héros (fatigue). Des événements et des décisions peuvent survenir en ville. ${lineup}/4 héros prêts pour la descente.</p>`}
+  </div>`;
+}
+
+/* ---------- Dilemmes ---------- */
+const H=id=>hero(id);
+const mor=(id,d)=>{const h=H(id); if(h)h.morale=clamp(h.morale+d,has(h,"loyal")?40:0,100);};
+function bond(a,b,n){const k=a<b?a+"-"+b:b+"-"+a; S.bonds[k]=(S.bonds[k]||0)+n; if(S.bonds[k]>=5&&!S.friends.includes(k))S.friends.push(k);}
+const freeHero=()=>pick(S.heroes.filter(h=>available(h)&&!S.lineup.includes(h.id)))||pick(S.heroes.filter(available));
+const DIL=[
+  {id:"rixe",t:"Rixe à la taverne",make(){if(S.heroes.length<2)return null;const [a,b]=shuffle(S.heroes.slice()).slice(0,2);return {a:a.id,b:b.id};},
+    text:x=>`${H(x.a).name} et ${H(x.b).name} se sont battus au Pendu Joyeux hier soir. Une table cassée, un tonneau percé, et toute la ville en parle.`,
+    opts:[{l:x=>`Punir ${H(x.a).first}, qui a frappé le premier`,d:"Moral de l'un en baisse, de l'autre en hausse.",f:x=>{mor(x.a,-15);mor(x.b,5);return `${H(x.a).first} encaisse la sanction en silence. ${H(x.b).first} se sent soutenu${ag(H(x.b),"","e")}.`;}},
+      {l:()=>"Payer les dégâts et passer l'éponge",d:"−40 or.",f:x=>{S.gold-=40;mor(x.a,3);mor(x.b,3);return "L'aubergiste est payé, les deux têtes brûlées trinquent ensemble.";}},
+      {l:()=>"Les laisser régler ça entre eux",d:"Une chance sur deux que ça finisse bien.",f:x=>{if(chance(.5)){bond(x.a,x.b,3);return "Après une seconde bagarre, ils finissent par rire ensemble. Une drôle d'amitié commence.";}const h=H(pick([x.a,x.b]));h.inj=Math.max(h.inj,1);return `${h.first} finit avec une côte fêlée (1 semaine d'infirmerie).`;}}]},
+  {id:"baron",t:"La fille du baron",make(){const h=freeHero();return h?{h:h.id}:null;},
+    text:x=>`Le baron de Hautsauze veut une escorte pour sa fille jusqu'à Valcrose. Il paie bien et exige votre meilleur élément disponible : ${H(x.h).name}.`,
+    opts:[{l:x=>`Envoyer ${H(x.h).first} (absent une semaine)`,d:"+120 or et +3 renommée à son retour.",f:x=>{const h=H(x.h);h.quest={id:S.nid++,title:"Escorter la fille du baron jusqu'à Valcrose",cls:h.cls,town:"Valcrose",danger:1,weeks:1,left:1,gold:120,xp:60,renown:3};S.lineup=S.lineup.filter(i=>i!==h.id);return `${h.first} part avec l'escorte du baron.`;}},
+      {l:()=>"Refuser poliment",d:"−2 renommée.",f:()=>{S.renown=Math.max(0,S.renown-2);return "Le baron s'adresse à une autre guilde, et le fait savoir.";}}]},
+  {id:"famille",t:"Une lettre de la maison",make(){const h=pick(S.heroes.filter(x=>x.inj===0&&!x.quest));return h?{h:h.id}:null;},
+    text:x=>`${H(x.h).name} a reçu une lettre de ${H(x.h).town} : sa famille a besoin d'aide. ${ag(H(x.h),"Il","Elle")} demande une semaine de permission.`,
+    opts:[{l:()=>"Accorder la permission",d:"Absent une semaine, revient avec un moral excellent.",f:x=>{const h=H(x.h);h.quest={id:S.nid++,title:`Permission à ${h.town}`,cls:h.cls,town:h.town,danger:0,weeks:1,left:1,gold:0,xp:0,renown:0,leave:true};S.lineup=S.lineup.filter(i=>i!==h.id);return `${h.first} prend la route de ${h.town}.`;}},
+      {l:()=>"Refuser : la guilde a besoin de tout le monde",d:"Moral en forte baisse.",f:x=>{mor(x.h,-18);hist(H(x.h),"se voit refuser une permission.");return `${H(x.h).first} reste, mais quelque chose s'est brisé.`;}}]},
+  {id:"dette",t:"L'usurier de Brasque",make(){const h=pick(S.heroes);return h?{h:h.id}:null;},
+    text:x=>`Un usurier se présente au hall : ${H(x.h).name} lui doit 60 or, et il menace d'envoyer ses gros bras.`,
+    opts:[{l:()=>"Payer la dette",d:"−60 or, moral en hausse.",f:x=>{S.gold-=60;mor(x.h,12);return `${H(x.h).first} jure de rembourser la guilde en exploits.`;}},
+      {l:()=>"Mettre l'usurier dehors",d:"Risque de représailles.",f:x=>{if(chance(.35)){const h=H(x.h);h.inj=Math.max(h.inj,2);mor(x.h,-10);return `Les gros bras attendent ${h.first} au coin d'une rue (2 semaines d'infirmerie).`;}return "L'usurier repart en maugréant. On n'en entend plus parler.";}}]},
+  {id:"voyante",t:"La voyante des Puits",make(){return {};},
+    text:()=>"Une voyante affirme avoir rêvé de votre prochaine descente. Pour 40 or, elle vous dira où frapper.",
+    opts:[{l:()=>"Payer la voyante",d:"−40 or, +10 % de dégâts à la prochaine descente.",f:()=>{S.gold-=40;S.buff=1.1;return "Ses conseils sont étrangement précis. Les héros descendront avec confiance.";}},
+      {l:()=>"La renvoyer",d:"Rien ne change.",f:()=>"Elle hausse les épaules et disparaît dans la foule."}]},
+  {id:"recrue",t:"Un jeune qui frappe à la porte",make(){return S.heroes.length<10?{}:null;},
+    text:()=>"Un jeune de dix-huit ans attend devant le hall depuis l'aube. Pas d'argent, pas d'équipement, mais il refuse de partir.",
+    opts:[{l:()=>"L'engager sans prime",d:"Un héros de plus, inexpérimenté.",f:()=>{const h=makeHero({age:18});h.joined=S.year;h.contract=2;h.morale=80;S.heroes.push(h);hist(h,`est engagé${ag(h,"","e")} après trois jours d'attente devant le hall.`);return `${h.name}, ${CLASSES[h.cls].n.toLowerCase()}, rejoint la guilde.`;}},
+      {l:()=>"Le renvoyer chez lui",d:"Rien ne change.",f:()=>"Il repart, déçu. Peut-être le reverrez-vous dans une autre guilde."}]},
+  {id:"incendie",t:"Le feu chez les voisins",make(){const g=pick(S.guilds.filter(x=>!x.isP));return {g:g.id};},
+    text:x=>`Le hall ${G(x.g).name.startsWith("Les ")?"des "+G(x.g).name.slice(4):"de "+G(x.g).name} brûle. Toute la rue regarde.`,
+    opts:[{l:()=>"Envoyer vos héros aider",d:"+4 renommée, −20 or, risque de blessure.",f:x=>{S.renown+=4;S.gold-=20;(G(x.g).hist=G(x.g).hist||[]).push(`Incendie du hall, saison ${S.year}`);if(chance(.25)){const h=pick(S.heroes.filter(y=>y.inj===0));if(h){h.inj=1;return `Le feu est maîtrisé. ${h.first} s'est brûlé${ag(h,"","e")} les mains (1 semaine).`;}}return "Le feu est maîtrisé. On se souviendra de votre geste.";}},
+      {l:()=>"Regarder brûler",d:"La guilde rivale s'affaiblit.",f:x=>{G(x.g).st=clamp(G(x.g).st-4,15,92);S.renown=Math.max(0,S.renown-2);return "Le hall est perdu. Certains en ville trouvent votre indifférence choquante (−2 renommée).";}}]},
+  {id:"duel",t:"Le défi",make(){const g=pick(S.guilds.filter(x=>!x.isP&&x.star));const h=S.heroes.slice().sort((a,b)=>rating(b)-rating(a))[0];return g&&h&&available(h)?{g:g.id,h:h.id}:null;},
+    text:x=>`${G(x.g).star.name}, figure de ${G(x.g).name}, défie ${H(x.h).name} en duel sur la place du marché.`,
+    opts:[{l:x=>`Accepter : ${H(x.h).first} se bat`,d:"Gloire si victoire, blessure si défaite.",f:x=>{const h=H(x.h),st=G(x.g).star;if(chance(clamp(.3+rating(h)/200-st.lvl*.02,.15,.8))){S.renown+=6;mor(x.h,12);h.virtues.push(`Vainqueur de ${st.name}`);chron("duel",`${h.name} bat ${st.name} en duel sur la place du marché.`,h.id);return `${h.first} l'emporte sous les cris de la foule (+6 renommée).`;}h.inj=Math.max(h.inj,2);mor(x.h,-10);return `${h.first} mord la poussière (2 semaines d'infirmerie).`;}},
+      {l:()=>"Refuser le duel",d:"−2 renommée.",f:()=>{S.renown=Math.max(0,S.renown-2);return "On murmure que votre guilde a peur.";}}]},
+  {id:"relique",t:"L'objet qui murmure",make(){return {};},
+    text:()=>"Un fossoyeur propose un objet trouvé dans une tombe de Malpas. Il en veut 150 or et jure qu'il porte bonheur.",
+    opts:[{l:()=>"Acheter l'objet",d:"−150 or, une relique (souvent rare).",f:()=>{S.gold-=150;const it=makeRelic("un fossoyeur de Malpas",.18);S.inventory.push(it);return `La guilde acquiert ${it.name} (${RAR[it.rar].n.toLowerCase()}).`;}},
+      {l:()=>"Refuser",d:"Rien ne change.",f:()=>"Le fossoyeur repart avec son sac."}]},
+  {id:"gala",t:"Le gala du mécène",make(){return {};},
+    text:()=>`${S.patron.name.split(",")[0]} organise un gala et attend que la guilde y fasse bonne figure.`,
+    opts:[{l:()=>"Y aller en grande tenue",d:"−80 or, la confiance du mécène remonte.",f:()=>{S.gold-=80;if(S.patron.conf<3){S.patron.conf++;return "Le mécène est ravi : sa confiance remonte d'un cran.";}S.renown+=3;return "Le mécène est ravi et vous présente à tout le comté (+3 renommée).";}},
+      {l:()=>"Envoyer une lettre d'excuse",d:"−1 renommée.",f:()=>{S.renown=Math.max(0,S.renown-1);return "Votre absence est remarquée.";}}]},
+  {id:"transfuge",t:"Le transfuge",make(){return S.heroes.length<10?{g:pick(S.guilds.filter(x=>!x.isP)).id}:null;},
+    text:x=>`Un héros de ${G(x.g).name} frappe à votre porte en pleine nuit. Il veut changer de couleurs, sans prime.`,
+    opts:[{l:()=>"L'accueillir",d:"Un héros aguerri gratuit, mais mauvaise réputation.",f:x=>{const h=marketHero();delete h.price;delete h.from;h.joined=S.year;h.contract=2;h.morale=60;S.heroes.push(h);S.renown=Math.max(0,S.renown-2);G(x.g).st=clamp(G(x.g).st-2,15,92);hist(h,`déserte ${G(x.g).name} pour rejoindre ${pg().name}.`);return `${h.name} (${CLASSES[h.cls].n}, niveau ${h.lvl}) rejoint la guilde. La Ligue n'apprécie pas (−2 renommée).`;}},
+      {l:()=>"Le renvoyer chez les siens",d:"+1 renommée.",f:()=>{S.renown+=1;return "Votre loyauté envers la Ligue est saluée.";}}]},
+  {id:"mentor",t:"La leçon du vétéran",make(){if(S.heroes.length<2)return null;const s=S.heroes.slice().sort((a,b)=>b.lvl-a.lvl);const v=s[0],y=s[s.length-1];return v.id!==y.id?{a:v.id,b:y.id}:null;},
+    text:x=>`${H(x.a).name} propose de prendre ${H(x.b).name} sous son aile. Il faudra payer le matériel d'entraînement.`,
+    opts:[{l:()=>"Financer l'entraînement",d:"−50 or, gros gain d'expérience et lien entre les deux.",f:x=>{S.gold-=50;const y=H(x.b);y.xp+=90;levelUps(y);bond(x.a,x.b,2);return `${y.first} progresse à vue d'œil (+90 XP).`;}},
+      {l:()=>"Pas maintenant",d:"Rien ne change.",f:()=>"Le vétéran hausse les épaules."}]},
+  {id:"augment",t:"Une question d'argent",make(){const h=S.heroes.slice().sort((a,b)=>rating(b)-rating(a))[0];return h?{h:h.id}:null;},
+    text:x=>`${H(x.h).name} estime valoir plus que ${H(x.h).sal} or par semaine, et le dit devant tout le monde.`,
+    opts:[{l:()=>"Augmenter de 5 or par semaine",d:"Moral en hausse.",f:x=>{const h=H(x.h);h.sal+=5;mor(x.h,12);return `${h.first} touche désormais ${h.sal} or par semaine.`;}},
+      {l:()=>"Refuser",d:"Moral en baisse.",f:x=>{mor(x.h,-12);return `${H(x.h).first} ronge son frein.`;}}]},
+  {id:"superstition",t:"Le présage",make(){return {};},
+    text:()=>"Les mineurs racontent qu'un corbeau blanc s'est posé sur le hall. Pour eux, c'est un très mauvais présage.",
+    opts:[{l:()=>"Payer une messe à l'abbaye",d:"−30 or, le moral remonte.",f:()=>{S.gold-=30;for(const h of S.heroes)h.morale=clamp(h.morale+5,0,100);return "Les héros descendront le cœur plus léger.";}},
+      {l:()=>"En rire",d:"Les plus superstitieux s'inquiètent.",f:()=>{for(const h of S.heroes)if(has(h,"devot")||has(h,"maudit")||has(h,"couard"))h.morale=clamp(h.morale-8,has(h,"loyal")?40:0,100);return "La plupart rient avec vous. Pas tous.";}}]}
+];
+const optCost=o=>{const m=/−(\d+) or/.exec(o.d||"");return m?+m[1]:0;};
+function rollDilemma(){
+  for(const d of shuffle(DIL.slice())){const ctx=d.make(); if(ctx)return {id:d.id,ctx};}
+  return null;
+}
+function dilValid(D){return ["a","b","h"].every(k=>D.ctx[k]==null||!!H(D.ctx[k]))&&(D.ctx.g==null||!!G(D.ctx.g));}
 
 /* ---------- Rêves ---------- */
 function checkDreams(rep){
@@ -1279,6 +1480,9 @@ function drawTitle(cv){
 function ensure(){
   S.questOffers=S.questOffers||[]; S.market=S.market||[]; S.offers=S.offers||[]; if(S.ironman==null)S.ironman=false;
   if(!S.townPos)genMap(); if(!S.cup)newCup(); if(!S.questOffers.length)refreshQuests(); if(!S.market.length)refreshMarket(true);
+  if(S.day==null){S.day=0;S.weekEvent=null;S.weekDilemma=false;S.dilemma=null;}
+  S.inventory=S.inventory||[]; S.staff=S.staff||{}; S.rec=S.rec||{}; if(S.buff==null)S.buff=1; if(!S.staffPool)refreshStaffPool();
+  for(const g of S.guilds){if(!g.isP&&!g.star)g.star=makeStar(g); if(!g.hist)g.hist=[];}
   if(!S.dgOpts){S.dgOpts=[S.nextDg||genDungeon(pg().div,false),genDungeon(pg().div,true)]; S.dgPick=0;}
   for(const h of S.heroes.concat(S.tavern,S.market))if(h.motive==null){h.motive=ri(0,MOTIVES.length-1);h.fear=ri(0,FEARS.length-1);h.dream=ri(0,DREAMS.length-1);h.dreamDone=false;}
 }
@@ -1303,13 +1507,15 @@ function crest(h,hueOverride){
 function gcrest(g){return `<span class="dot" style="background:hsl(${g.hue} 50% 48%)"></span>`;}
 function heroCard(h,opt={}){
   const ms=CLASSES[h.cls].main; const t=title(h);
-  const status=h.inj>0?`<span class="chip bad">Blessé${ag(h,"","e")} ${h.inj} sem.</span>`:h.quest?`<span class="chip gold">En quête, ${h.quest.left} sem.</span>`:"";
+  const status=h.inj>0?`<span class="chip bad">Blessé${ag(h,"","e")} ${h.inj} sem.</span>`:h.quest?`<span class="chip gold">${h.quest.leave?"En permission":"En quête"}, ${h.quest.left} sem.</span>`:"";
+  const fat=(h.fat||0)>85?`<span class="chip bad">Épuisé${ag(h,"","e")}</span>`:(h.fat||0)>60?`<span class="chip">Fatigué${ag(h,"","e")}</span>`:"";
+  const rel=h.relic!=null&&S.inventory?S.inventory.find(x=>x.id===h.relic):null;
   return `<div class="panel hero ${opt.sel?"sel":""} ${opt.off?"off":""}" data-a="${opt.action||"hero"}" data-id="${h.id}" tabindex="0" role="button" aria-pressed="${opt.sel?"true":"false"}">
     ${portrait(h,56)}
     <div class="stack" style="gap:6px;min-width:0">
       <div><div class="name">${esc(h.name)}</div><div class="meta">${CLASSES[h.cls].n} · niv. ${h.lvl} · ${h.age} ans${t?` · <i>${t}</i>`:""}</div></div>
       <div class="statline">${Object.keys(STATN).map(k=>`<span class="${k===ms?"main":""}" title="${STATN[k]}">${k.slice(0,3).toUpperCase()} ${h.st[k]}</span>`).join("")}</div>
-      <div class="chips">${h.traits.map(x=>`<span class="chip" title="${esc(TRAITS[x].d)}">${TRAITS[x].n}</span>`).join("")}${h.scars.map(s=>`<span class="chip bad">${s}</span>`).join("")}${h.dreamDone?`<span class="chip gold" title="Rêve accompli">★ Rêve</span>`:""}${status}</div>
+      <div class="chips">${h.traits.map(x=>`<span class="chip" title="${esc(TRAITS[x].d)}">${TRAITS[x].n}</span>`).join("")}${h.scars.map(s=>`<span class="chip bad">${s}</span>`).join("")}${h.dreamDone?`<span class="chip gold" title="Rêve accompli">★ Rêve</span>`:""}${rel?`<span class="chip rar${rel.rar}" title="${esc(relicText(rel))}">◆ ${esc(rel.name)}</span>`:""}${status}${fat}</div>
       ${opt.fee!=null||opt.price!=null?`<div class="spread small"><span>Salaire ${h.sal}/sem.</span><b class="mono">${opt.price!=null?"Prix "+opt.price:h.fee?"Prime "+h.fee:"Gratuit"}</b></div>`:
       `<div class="spread small muted"><span>Moral</span><span>Valeur ${rating(h)} · ${h.sal} or/sem. · ${h.contract} an${h.contract>1?"s":""}</span></div><div class="bar mor"><i style="width:${h.morale}%"></i></div>`}
     </div></div>`;
@@ -1322,19 +1528,19 @@ function header(){
     <div class="stats">
       <div class="stat"><span class="label">Guilde</span><b style="font-family:var(--f-body)">${gcrest(g)}${esc(g.name)}</b></div>
       <div class="stat"><span class="label">Division</span><b>${DIVN[g.div]} · ${ord(pos)}</b></div>
-      <div class="stat"><span class="label">Semaine</span><b>${Math.min(S.week+1,14)}/14</b></div>
+      <div class="stat"><span class="label">Semaine · jour</span><b>${Math.min(S.week+1,14)}/14 · ${S.week>=14?"—":(S.day+1)+"/7"}</b></div>
       <div class="stat"><span class="label">Or</span><b style="color:${S.gold<0?"var(--bad)":"inherit"}">${S.gold}</b></div>
       <div class="stat"><span class="label">Renommée</span><b>${S.renown}</b></div>
       <div class="stat"><span class="label">Confiance du mécène</span><b class="hearts" title="${esc(p.name)}">${"◆".repeat(p.conf)}${"◇".repeat(3-p.conf)}</b></div>
       <div class="stat"><span class="label">${S.ironman?"Ironman":"Ambiance"}</span><button data-a="music" class="small" style="padding:.15em .6em">${MUS.on?"Couper la musique":"Musique"}</button></div>
     </div></header>
-    <nav class="tabs" aria-label="Sections">${[["guilde","Guilde"],["descente","Descente"],["ligue","Ligue et Coupe"],["quetes","Quêtes"],["transferts","Transferts"],["taverne","Taverne"],["armurerie","Armurerie"],["carte","Carte"],["annales","Annales"],["gazette","Gazette"],["codex","Codex"],["options","Options"]].map(([k,n])=>`<button data-a="tab" data-t="${k}" aria-current="${UI.tab===k}">${n}</button>`).join("")}</nav>`;
+    <nav class="tabs" aria-label="Sections">${[["guilde","Guilde"],["descente","Descente"],["ligue","Ligue et Coupe"],["quetes","Quêtes"],["transferts","Transferts"],["taverne","Taverne"],["armurerie","Armurerie et reliques"],["personnel","Personnel"],["carte","Carte"],["annales","Annales"],["gazette","Gazette"],["guide","Guide"],["codex","Codex"],["options","Options"]].map(([k,n])=>`<button data-a="tab" data-t="${k}" aria-current="${UI.tab===k}">${n}</button>`).join("")}</nav>`;
 }
 function render(){
   const app=$("#app");
   if(!S||UI.setup){app.innerHTML=renderSetup(); renderModal(); return;}
   if(UI.replay){app.innerHTML=header()+renderReplay(); renderModal(); scrollLog(); return;}
-  const v={guilde:vGuilde,descente:vDescente,ligue:vLigue,quetes:vQuetes,transferts:vTransferts,taverne:vTaverne,armurerie:vArmurerie,carte:vCarte,annales:vAnnales,gazette:vGazette,codex:vCodex,options:vOptions}[UI.tab]||vGuilde;
+  const v={guilde:vGuilde,descente:vDescente,ligue:vLigue,quetes:vQuetes,transferts:vTransferts,taverne:vTaverne,armurerie:vArmurerie,personnel:vPersonnel,carte:vCarte,annales:vAnnales,gazette:vGazette,guide:vGuide,codex:vCodex,options:vOptions}[UI.tab]||vGuilde;
   app.innerHTML=header()+(S.over&&UI.tab!=="annales"&&UI.tab!=="options"?vOver():v());
   renderModal();
   if(UI.tab==="carte"&&!S.over)drawMap();
@@ -1382,10 +1588,9 @@ function vGuilde(){
   const g=pg();
   return `<div class="stack"><div class="hall-wrap"><canvas id="hall" role="img" aria-label="Le hall de la guilde la nuit"></canvas>
     <div class="hall-cap"><span class="label">${esc(g.town)} · division ${DIVN[g.div]}</span><h2>${esc(g.name)}</h2><p class="small">${S.heroes.length} héros · salle d'armes ${S.fac.salle}/2 · infirmerie ${S.fac.infirm}/2${g.titles?` · ${g.titles} Lanterne${g.titles>1?"s":""} d'Or`:""}${g.cups?` · ${g.cups} Coupe${g.cups>1?"s":""}`:""}</p></div></div>
+    ${S.week<14?calStrip():""}
     <div class="two">
-    <section class="stack"><div class="spread"><h2>Effectif (${hs.length}/10)</h2><span class="small muted">Masse salariale : <b class="mono">${sal}</b> or/semaine</span></div>
-      ${hs.length?`<div class="grid">${hs.map(h=>heroCard(h)).join("")}</div>`:`<p class="panel">Plus aucun héros. Passez à la taverne avant la prochaine descente.</p>`}
-    </section>
+    <section class="stack">${rosterSection(hs,sal)}</section>
     <aside class="stack">
       <div class="panel stack"><h3>Mécène</h3><p>${esc(S.patron.name)}</p><p class="small">Objectif : <b>${esc(S.patron.goal)}</b></p><p class="small muted">Verse ${PATRONPAY[pg().div]} or par semaine. Si sa confiance tombe à zéro, la guilde ferme.</p></div>
       <div class="panel stack"><h3>Entraînement de la semaine</h3>
@@ -1394,6 +1599,32 @@ function vGuilde(){
       <div class="panel stack"><h3>Installations</h3>${Object.entries(FACIL).map(([k,f])=>{const l=S.fac[k];const c=f.cost[l];return `<div class="spread"><div><b>${f.n}</b> <span class="chip">niv. ${l}/2</span><p class="small muted">${f.d}</p></div>${c?`<button data-a="facil" data-k="${k}" ${S.gold<c?"disabled":""}>Agrandir · ${c}</button>`:`<span class="chip good">Complet</span>`}</div>`;}).join("")}</div>
       ${S.lastReport?reportPanel(S.lastReport,true):""}
     </aside></div></div>`;
+}
+function rosterSection(hs,sal){
+  const cf=UI.cf||"all", k=UI.sortK||"rating", dir=UI.sortD||-1;
+  const val=h=>({name:h.name,cls:CLASSES[h.cls].n,lvl:h.lvl,age:h.age,rating:rating(h),morale:h.morale,fat:h.fat||0,for:h.st.for,adr:h.st.adr,esp:h.st.esp,vig:h.st.vig,sal:h.sal})[k];
+  const list=hs.filter(h=>cf==="all"||h.cls===cf).sort((a,b)=>{const x=val(a),y=val(b);return (x>y?1:x<y?-1:0)*dir;});
+  const tab=UI.view==="tableau";
+  const head=`<div class="spread"><h2>Effectif (${hs.length}/10)</h2><div class="row"><span class="small muted">Salaires <b class="mono">${sal}</b> or/sem.</span>
+    <button class="chipbtn" data-a="view" data-v="cartes" aria-pressed="${!tab}">Cartes</button><button class="chipbtn" data-a="view" data-v="tableau" aria-pressed="${tab}">Tableau</button></div></div>
+    <div class="row" role="group" aria-label="Filtrer par classe">${[["all","Toutes les classes"],...Object.entries(CLASSES).map(([kk,c])=>[kk,c.n])].map(([kk,n])=>`<button class="chipbtn" data-a="cf" data-k="${kk}" aria-pressed="${cf===kk}">${n}</button>`).join("")}</div>`;
+  if(!hs.length)return head+`<p class="panel">Plus aucun héros. Passez à la taverne avant la prochaine descente.</p>`;
+  if(!tab)return head+`<div class="grid">${list.map(h=>heroCard(h)).join("")}</div><p class="small muted">Passez en vue Tableau pour trier l'effectif et comparer deux héros.</p>`;
+  const th=(key,label,n)=>`<th class="${n?"n":""}"><button class="linkbtn" data-a="sort" data-k="${key}">${label}${k===key?(dir>0?" ▲":" ▼"):""}</button></th>`;
+  return head+`<p class="small muted">${UI.cmp&&UI.cmp.length?`Comparaison : ${UI.cmp.length}/2 sélectionné. <button class="chipbtn" data-a="cmpclear">Effacer</button>`:"Cochez deux héros pour les comparer côte à côte."}</p>
+  <div class="panel tablewrap" style="padding:8px"><table><thead><tr><th></th>${th("name","Héros")}${th("cls","Classe")}${th("lvl","Niv",1)}${th("age","Âge",1)}${th("rating","Valeur",1)}${th("for","FOR",1)}${th("adr","ADR",1)}${th("esp","ESP",1)}${th("vig","VIG",1)}${th("morale","Moral",1)}${th("fat","Fatigue",1)}${th("sal","Salaire",1)}<th>État</th><th>Comparer</th></tr></thead><tbody>
+  ${list.map(h=>`<tr><td>${portrait(h,30)}</td><td><button class="linkbtn" data-a="hero" data-id="${h.id}"><b>${esc(h.name)}</b></button></td><td>${CLASSES[h.cls].n}</td><td class="n">${h.lvl}</td><td class="n">${h.age}</td><td class="n">${rating(h)}</td>${["for","adr","esp","vig"].map(s2=>`<td class="n" style="${CLASSES[h.cls].main===s2?"color:var(--lantern-hi)":""}">${h.st[s2]}</td>`).join("")}<td class="n">${h.morale}</td><td class="n" style="${(h.fat||0)>60?"color:var(--ember)":""}">${h.fat||0}</td><td class="n">${h.sal}</td>
+    <td>${h.inj>0?`<span class="chip bad">Blessé ${h.inj} sem.</span>`:h.quest?`<span class="chip gold">${h.quest.leave?"Permission":"En quête"}</span>`:S.lineup.includes(h.id)?`<span class="chip good">Expédition</span>`:`<span class="chip">Libre</span>`}</td>
+    <td><input type="checkbox" data-a="cmp" data-id="${h.id}" ${UI.cmp&&UI.cmp.includes(h.id)?"checked":""} aria-label="Comparer ${esc(h.name)}"></td></tr>`).join("")}
+  </tbody></table></div>`;
+}
+function compareHtml(a,b){
+  const ca=combatStats(a), cb=combatStats(b);
+  const rows=[["Niveau",a.lvl,b.lvl],["Valeur",rating(a),rating(b)],["Force",a.st.for,b.st.for],["Adresse",a.st.adr,b.st.adr],["Esprit",a.st.esp,b.st.esp],["Vigueur",a.st.vig,b.st.vig],["PV en descente",ca.hp,cb.hp],["Attaque",+ca.atk.toFixed(1),+cb.atk.toFixed(1)],["Protection",+ca.arm.toFixed(1),+cb.arm.toFixed(1)],["Moral",a.morale,b.morale],["Fatigue (moins = mieux)",-(a.fat||0),-(b.fat||0)],["Descentes",a.descents,b.descents],["Monstres abattus",a.kills,b.kills]];
+  const col=(h,i)=>`<div class="stack" style="gap:6px"><div class="row">${portrait(h,64)}<div><b>${esc(h.name)}</b><p class="small muted">${CLASSES[h.cls].n} · ${h.age} ans · ${h.sal} or/sem.</p></div></div>
+    ${rows.map(r=>{const v=r[i+1],o=r[2-i];return `<div class="spread small"><span class="muted">${r[0].replace(" (moins = mieux)","")}</span><span class="mono ${v>o?"better":""}">${Math.abs(v)}</span></div>`;}).join("")}
+    <div class="chips">${h.traits.map(t=>`<span class="chip">${TRAITS[t].n}</span>`).join("")}</div></div>`;
+  return `<div class="cmpgrid">${col(a,0)}${col(b,1)}</div>`;
 }
 function reportPanel(r,compact){
   const cls=r.out==="win"?"result-win":r.out==="loss"?"result-loss":"result-draw";
@@ -1410,6 +1641,7 @@ function reportPanel(r,compact){
     ${r.derby?`<p class="small"><span class="chip gold">Derby</span> contre un voisin de ${esc(pg().town)}.</p>`:""}
     ${r.cup?`<p class="small"><b>Coupe, ${r.cup.round.toLowerCase()} :</b> ${r.cup.won?"qualifiée":"éliminée"} contre ${esc(r.cup.opp)} (${r.cup.my} – ${r.cup.their}).</p>`:""}
     ${r.quests&&r.quests.length?`<p class="small"><b>Quêtes :</b> ${r.quests.map(esc).join(" ")}</p>`:""}
+    ${r.relics&&r.relics.length?`<p class="small" style="color:var(--sky)"><b>Reliques rapportées :</b> ${r.relics.map(esc).join(", ")}</p>`:""}
     ${r.dreams&&r.dreams.length?`<p class="small" style="color:var(--lantern-hi)"><b>Rêves accomplis :</b> ${r.dreams.map(esc).join(", ")}</p>`:""}</div>`;
 }
 
@@ -1425,11 +1657,11 @@ function vDescente(){
   const party=S.lineup.map(hero);
   const syn=activeSyn(party);
   const events=dg.rooms.filter(r=>r.type!=="combat"&&r.type!=="boss").length;
-  return `<div class="two">
+  return `<div class="stack">${calStrip()}<div class="two">
     <section class="stack">
       <div class="dungeon stack">
-        <div class="spread"><div><span class="label">Semaine ${S.week+1} · adversaire</span><h2>${gcrest(opp)}${esc(opp.name)}</h2><p class="small muted">${ord(oppPos)} de la division · forme ${opp.sp.form.join(" ")||"—"}${opp.master?` · maître : ${esc(opp.master)}`:""}</p></div>
-        <div class="stack" style="gap:2px;text-align:right"><span class="label">Force estimée</span><b class="mono">${opp.st}</b></div></div>
+        <div class="spread"><div><span class="label">Semaine ${S.week+1} · adversaire</span><h2><button class="linkbtn" data-a="guild" data-id="${opp.id}">${gcrest(opp)}${esc(opp.name)}</button></h2><p class="small muted">${ord(oppPos)} de la division · forme ${opp.sp.form.join(" ")||"—"}${opp.master?` · maître : ${esc(opp.master)}`:""}</p></div>
+        <div class="stack" style="gap:2px;text-align:right"><span class="label">Force estimée</span><b class="mono">${opp.st}</b>${S.staff.eclaireur?`<span class="small muted">Score attendu : ${Math.round(maxScore(opp.div)*clamp(.3+opp.st/100*.85-.21,.05,1.1))}–${Math.round(maxScore(opp.div)*clamp(.3+opp.st/100*.85+.21,.05,1.1))}</span>`:""}</div></div>
         ${opp.town===pg().town?`<p class="small"><span class="chip gold">Derby</span> Les deux guildes viennent de ${esc(opp.town)}. Une victoire vaut de la renommée en plus, une défaite pèse sur le moral.</p>`:""}
         ${isCupWeek()&&cupOpp()!=null?`<p class="small"><span class="chip good">Coupe</span> Cette descente compte aussi pour les ${CUPN[S.cup.round].toLowerCase()} de la Coupe du Solstice, contre ${esc(G(cupOpp()).name)}.</p>`:""}
         <hr style="border:none;border-top:1px solid var(--line);width:100%;margin:0">
@@ -1447,7 +1679,7 @@ function vDescente(){
     <section class="stack"><div class="spread"><h2>Expédition</h2><span class="small muted">Touchez un héros pour l'ajouter ou le retirer</span></div>
       ${fit.length?fit.map(h=>heroCard(h,{action:"toggle",sel:S.lineup.includes(h.id)})).join(""):`<p class="panel">Aucun héros valide. Lancer la descente comptera comme un forfait.</p><button data-a="forfeit">Déclarer forfait</button>`}
       ${S.heroes.filter(h=>h.inj>0).length?`<p class="small muted">À l'infirmerie : ${S.heroes.filter(h=>h.inj>0).map(h=>`${esc(h.name)} (${h.inj} sem.)`).join(", ")}</p>`:""}
-    </section></div>`;
+    </section></div></div>`;
 }
 function partyHtml(R){
   const cur=R.res.T[Math.min(R.i,R.res.T.length-1)];
@@ -1484,7 +1716,7 @@ function vLigue(){
   return `<section class="stack"><div class="spread"><h2>Division ${DIVN[d]}</h2>
     <div class="row">${[1,2,3,4].map(x=>`<button data-a="div" data-d="${x}" class="${x===d?"primary":""}">${DIVN[x]}</button>`).join("")}</div></div>
     <div class="panel tablewrap"><table><thead><tr><th>#</th><th>Guilde</th><th>Ville</th><th class="n">J</th><th class="n">V</th><th class="n">N</th><th class="n">D</th><th class="n">Diff.</th><th class="n">Pts</th><th>Forme</th><th class="n">Titres</th></tr></thead><tbody>
-    ${t.map((g,i)=>`<tr class="${g.isP?"me":""} ${d>1&&i<2?"up":""} ${d<4&&i>5?"down":""}"><td class="mono">${i+1}</td><td>${gcrest(g)}${esc(g.name)}</td><td>${esc(g.town)}</td><td class="n">${g.sp.pl}</td><td class="n">${g.sp.w}</td><td class="n">${g.sp.d}</td><td class="n">${g.sp.l}</td><td class="n">${g.sp.sf-g.sp.sa}</td><td class="n"><b>${g.sp.pts}</b></td><td class="mono small">${g.sp.form.join("")||"—"}</td><td class="n">${g.titles||""}</td></tr>`).join("")}
+    ${t.map((g,i)=>`<tr class="${g.isP?"me":""} ${d>1&&i<2?"up":""} ${d<4&&i>5?"down":""}"><td class="mono">${i+1}</td><td><button class="linkbtn" data-a="guild" data-id="${g.id}">${gcrest(g)}${esc(g.name)}</button></td><td>${esc(g.town)}</td><td class="n">${g.sp.pl}</td><td class="n">${g.sp.w}</td><td class="n">${g.sp.d}</td><td class="n">${g.sp.l}</td><td class="n">${g.sp.sf-g.sp.sa}</td><td class="n"><b>${g.sp.pts}</b></td><td class="mono small">${g.sp.form.join("")||"—"}</td><td class="n">${g.titles||""}</td></tr>`).join("")}
     </tbody></table></div>
     <p class="small muted">Les 2 premiers montent, les 2 derniers descendent. Le premier de la Couronne remporte la Lanterne d'Or.</p>
     ${cupSection()}</section>`;
@@ -1539,7 +1771,34 @@ function vArmurerie(){
     ${S.heroes.map(h=>`<tr><td><b>${esc(h.name)}</b><br><span class="small muted">${CLASSES[h.cls].n}</span></td>
       <td>${GEARN.w[h.gear.w]}</td><td>${h.gear.w<3?`<button data-a="gear" data-id="${h.id}" data-k="w" ${S.gold<GEARCOST[h.gear.w+1]?"disabled":""}>${GEARN.w[h.gear.w+1]} · ${GEARCOST[h.gear.w+1]}</button>`:`<span class="chip good">Maximum</span>`}</td>
       <td>${GEARN.a[h.gear.a]}</td><td>${h.gear.a<3?`<button data-a="gear" data-id="${h.id}" data-k="a" ${S.gold<GEARCOST[h.gear.a+1]?"disabled":""}>${GEARN.a[h.gear.a+1]} · ${GEARCOST[h.gear.a+1]}</button>`:`<span class="chip good">Maximum</span>`}</td></tr>`).join("")}
-    </tbody></table></div></section>`;
+    </tbody></table></div>
+    ${S.relicShop?`<div class="panel spread"><div><span class="label">Marchand ambulant</span><p><b class="rar${S.relicShop.rar}">${esc(S.relicShop.name)}</b> <span class="small muted">${RAR[S.relicShop.rar].n} · ${relicText(S.relicShop)}</span></p></div><button class="primary" data-a="buyrelic" ${S.gold<S.relicShop.price?"disabled":""}>Acheter · ${S.relicShop.price}</button></div>`:""}
+    <div class="spread"><div><h2>Reliques</h2><p class="muted">Objets rapportés des donjons. Un héros porte une relique à la fois. La forge renforce leurs effets.</p></div><span class="mono">${S.inventory.length} objet${S.inventory.length>1?"s":""}</span></div>
+    ${S.inventory.length?`<div class="grid">${S.inventory.map(it=>{const hh=it.holder!=null?hero(it.holder):null;return `<div class="panel stack"><div><b class="rar${it.rar}" style="font-family:var(--f-display);font-size:1.2rem">${esc(it.name)}${it.lvl?" +"+it.lvl:""}</b><p class="small muted">${RAR[it.rar].n} · trouvée par la guilde : ${esc(it.from)}, saison ${it.year}</p></div>
+      <p class="small">${relicText(it)}</p>
+      <div class="row"><select id="eq-${it.id}" aria-label="Porteur de ${esc(it.name)}"><option value="">Personne</option>${S.heroes.map(h=>`<option value="${h.id}" ${hh&&hh.id===h.id?"selected":""}>${esc(h.name)}</option>`).join("")}</select><button data-a="equip" data-id="${it.id}">Confier</button></div>
+      <div class="row">${it.lvl<2?`<button data-a="forge" data-id="${it.id}" ${S.gold<forgeCost(it)?"disabled":""}>Forger +${it.lvl+1} · ${forgeCost(it)}</button>`:`<span class="chip good">Forgée au maximum</span>`}<button class="danger" data-a="sellrelic" data-id="${it.id}">Vendre · ${sellValue(it)}</button></div></div>`;}).join("")}</div>`:`<p class="panel small muted">Aucune relique pour l'instant. Les gardiens et les coffres scellés en laissent parfois derrière eux.</p>`}
+    </section>`;
+}
+function vPersonnel(){
+  const pool=S.staffPool||{};
+  return `<section class="stack"><div><h2>Personnel</h2><p class="muted">Les gens qui font tourner le hall quand les héros sont sous terre. Chaque poste se paie chaque semaine ; l'embauche coûte trois semaines de gages.</p></div>
+    <p class="small">Gages du personnel : <b class="mono">${staffCost()}</b> or/semaine.</p>
+    <div class="grid">${Object.entries(STAFF).map(([k,r])=>{const cur=S.staff[k],c=pool[k];return `<div class="panel stack"><span class="label">${r.n}</span>
+      ${cur?`<h3>${esc(cur.name)}</h3><p class="small">${r.d}</p><div class="spread"><span class="mono small">${cur.sal} or/sem.</span><button class="danger" data-a="fire" data-k="${k}">Congédier</button></div>`:
+      `<p class="small">${r.d}</p>${c?`<div class="spread"><span class="small">Candidat${c.sex==="f"?"e":""} : <b>${esc(c.name)}</b>, ${c.sal} or/sem.</span><button class="primary" data-a="hire" data-k="${k}" ${S.gold<c.sal*3?"disabled":""}>Embaucher · ${c.sal*3}</button></div>`:""}`}
+    </div>`;}).join("")}</div></section>`;
+}
+function vGuide(){
+  return `<section class="stack guide" style="max-width:860px"><h2>Comment jouer</h2>
+    <div class="panel stack"><h3>Le but</h3><p>Vous dirigez une guilde d'aventuriers du comté d'Aurmont. Chaque semaine, quatre de vos héros descendent dans un donjon. Leur score affronte celui d'une guilde rivale. Gagnez des matchs pour monter de l'Ardoise jusqu'à la Couronne et décrocher la Lanterne d'Or, sans perdre la confiance de votre mécène.</p></div>
+    <div class="panel stack"><h3>Une semaine</h3><p>La semaine compte sept jours. Les six premiers sont libres : les héros récupèrent de leur fatigue, la ville vit ses événements, et une décision peut vous tomber dessus. Le septième jour, c'est la descente. Le bouton « Aller au jour de descente » fait défiler la semaine pour vous, et s'arrête si une décision vous attend.</p></div>
+    <div class="panel stack"><h3>Préparer une descente</h3><p>Dans l'onglet Descente, choisissez entre la descente classique et la descente périlleuse (plus dure, plus payante), puis composez un groupe de quatre héros. Mélangez les classes : un Rempart pour encaisser, un Herboriste pour soigner et réduire les morts, des frappeurs pour marquer. Certaines paires débloquent des synergies. Réglez enfin la tactique : prudente si vos héros sont fragiles, agressive si vous devez absolument gagner.</p></div>
+    <div class="panel stack"><h3>Les héros</h3><p>Chaque héros a des caractéristiques, deux traits qui agissent en combat, une motivation, une peur et un rêve. Il vieillit, se fatigue, se blesse, garde des séquelles, se lie d'amitié et peut mourir pour de bon. Surveillez le moral et la fatigue : un héros épuisé frappe moins fort et tombe plus vite. Équipez-les à l'Armurerie et confiez-leur les reliques rapportées des donjons.</p></div>
+    <div class="panel stack"><h3>L'argent</h3><p>Le mécène verse une somme chaque semaine, les victoires et le butin rapportent le reste. Les salaires des héros et du personnel partent chaque semaine. Si les coffres restent vides, la confiance du mécène baisse ; à zéro, la guilde ferme.</p></div>
+    <div class="panel stack"><h3>Au-delà des donjons</h3><p>Envoyez les héros de réserve en quête, achetez ou vendez des héros aux Transferts, embauchez du personnel, suivez la Coupe du Solstice et les guildes rivales. À la fin de chaque saison, les Annales racontent ce qui s'est réellement passé.</p></div>
+    <div class="panel stack"><h3>Conseils pour débuter</h3><p>Gardez toujours un soigneur dans le groupe. Laissez souffler les héros fatigués en alternant l'effectif. Préférez la tactique prudente les premières semaines. Une infirmerie et une guérisseuse sauvent beaucoup de vies.</p></div>
+  </section>`;
 }
 /* ----- Annales ----- */
 function chronicleText(){
@@ -1613,12 +1872,32 @@ function renderModal(){
       <div class="stack" style="gap:4px">${h.traits.map(t=>`<p class="small"><b>${TRAITS[t].n}</b> : ${TRAITS[t].d}</p>`).join("")}</div>
       ${h.motive!=null?`<div class="persona"><p><span class="label">Ce qui ${ag(h,"le","la")} fait descendre</span><br>${MOTIVES[h.motive]}</p><p><span class="label">Sa peur</span><br>${FEARS[h.fear].n}${FEARS[h.fear].c?` <span class="muted small">(−10 % dans la ${COND[FEARS[h.fear].c].n.toLowerCase()})</span>`:""}</p><p><span class="label">Son rêve</span><br>${DREAMS[h.dream].n} ${h.dreamDone?'<span class="chip gold">accompli</span>':'<span class="muted small">(moral, +1 et haut fait une fois accompli)</span>'}</p></div>`:""}
       ${h.scars.length?`<p class="small" style="color:var(--bad)"><b>Séquelles :</b> ${h.scars.join(", ")}</p>`:""}
+      ${!inT?`<p class="small"><b>Fatigue :</b> ${h.fat||0}/100${h.relic!=null&&S.inventory.find(x=>x.id===h.relic)?` · <b>Relique :</b> <span class="rar${S.inventory.find(x=>x.id===h.relic).rar}">${esc(S.inventory.find(x=>x.id===h.relic).name)}</span> (${relicText(S.inventory.find(x=>x.id===h.relic))})`:""}</p>`:""}
       ${h.virtues.length?`<p class="small" style="color:var(--good)"><b>Hauts faits :</b> ${h.virtues.map(esc).join(", ")}</p>`:""}
       ${fr.length?`<p class="small"><b>Amis :</b> ${fr.map(x=>esc(x.name)).join(", ")}</p>`:""}
       ${h.kin?`<p class="small" style="color:var(--accent)">${ag(h,"Parent","Parente")} de ${esc(h.kin)}, tombé au service de la guilde.</p>`:""}
       <p class="small mono">${h.descents} descentes · ${h.kills} monstres · ${h.bossKills} gardiens · moral ${h.morale}/100 · ${inT?`salaire demandé ${h.sal}`:`contrat ${h.contract} an(s), ${h.sal} or/sem.`}</p>
       ${h.hist.length?`<div class="stack" style="gap:2px"><span class="label">Parcours</span>${h.hist.slice().reverse().map(x=>`<p class="small">${esc(x)}</p>`).join("")}</div>`:""}
       ${inT?"":`<div class="row">${m.confirm?`<span class="small">Le renvoyer coûte ${h.sal*2} or d'indemnités.</span><button class="danger" data-a="release" data-id="${h.id}">Confirmer le renvoi</button><button data-a="hero" data-id="${h.id}">Annuler</button>`:`<button class="danger" data-a="askrelease" data-id="${h.id}">Renvoyer</button>`}</div>`}`;
+  } else if(m.type==="dilemma"){
+    const D=S.dilemma; if(!D){UI.modal=null;root.innerHTML="";return;}
+    const def=DIL.find(x=>x.id===D.id);
+    if(!dilValid(D)){inner=`<h2>${def.t}</h2><p>La situation s'est réglée d'elle-même.</p><div><button class="primary" data-a="dclear">Continuer</button></div>`;}
+    else inner=`<span class="label">${DAYN[S.day]} · une décision vous attend</span><h2>${def.t}</h2><p style="line-height:1.6">${esc(def.text(D.ctx))}</p>
+      <div class="stack">${def.opts.map((o,i)=>`<button class="dil-opt" data-a="dchoice" data-i="${i}" ${S.gold<optCost(o)?"disabled":""}><b>${esc(o.l(D.ctx))}</b><span class="small muted">${o.d}</span></button>`).join("")}</div>`;
+  } else if(m.type==="dresult"){
+    inner=`<span class="label">Décision prise</span><h2>${esc(m.t)}</h2><p style="line-height:1.6">${esc(m.txt)}</p><div><button class="primary" data-a="closemodal">Continuer</button></div>`;
+  } else if(m.type==="guild"){
+    const g=G(m.id); const r=S.rec[g.id]||{w:0,d:0,l:0}; const pos=sortDiv(g.div).indexOf(g)+1; const alumni=S.gone.filter(x=>x.to===g.id);
+    inner=`<div class="spread"><div><span class="label">${esc(g.town)} · ${DIVN[g.div]} · ${ord(pos)}</span><h2>${gcrest(g)}${esc(g.name)}</h2></div><button data-a="closemodal">Fermer</button></div>
+      ${g.isP?`<p>C'est votre maison.</p>`:`<div class="persona"><p><span class="label">Force estimée</span><br><b class="mono">${g.st}</b></p><p><span class="label">Palmarès</span><br>${g.titles||0} Lanterne${(g.titles||0)>1?"s":""} d'Or · ${g.cups||0} Coupe${(g.cups||0)>1?"s":""}</p><p><span class="label">Vos résultats contre elle</span><br><span class="mono">${r.w} V · ${r.d} N · ${r.l} D</span></p></div>
+      ${g.star?`<div class="row">${portrait({id:g.id*31+7,sex:g.star.sex,cls:g.star.cls,age:g.star.age,morale:70},56)}<p><span class="label">Figure de la maison</span><br><b>${esc(g.star.name)}</b>, ${CLASSES[g.star.cls].n.toLowerCase()} de niveau ${g.star.lvl}, ${g.star.age} ans</p></div>`:""}
+      ${g.master?`<p class="small">Dirigée par ${esc(g.master)}, ancien de votre maison.</p>`:""}
+      ${alumni.length?`<p class="small">Anciens de votre maison : ${alumni.map(x=>esc(x.name)).join(", ")}</p>`:""}
+      <div class="stack" style="gap:3px"><span class="label">Histoire récente</span>${(g.hist||[]).slice(-10).reverse().map(x=>`<p class="small">${esc(x)}</p>`).join("")||`<p class="small muted">Rien de marquant depuis votre arrivée.</p>`}</div>`}`;
+  } else if(m.type==="compare"){
+    const a=hero(m.a),b=hero(m.b); if(!a||!b){UI.modal=null;root.innerHTML="";return;}
+    inner=`<div class="spread"><h2>Comparaison</h2><button data-a="closemodal">Fermer</button></div>${compareHtml(a,b)}`;
   } else if(m.type==="reset"){
     inner=`<h2>Effacer la partie ?</h2><p>La guilde ${esc(pg().name)}, ses héros et ses Annales seront supprimés de ce navigateur. Copiez votre code de sauvegarde avant si vous voulez la garder.</p><div class="row"><button class="danger" data-a="doreset">Effacer et recommencer</button><button data-a="closemodal">Annuler</button></div>`;
   } else if(m.type==="season"){
@@ -1638,7 +1917,7 @@ function renderModal(){
         <div class="row"><button class="primary" data-a="newseason">Commencer la saison ${S.year+1}</button>${P.contracts.some(c=>c.state==="open")?`<span class="small muted">Les contrats non traités ne seront pas renouvelés.</span>`:""}</div>`;
     }
   }
-  root.innerHTML=`<div class="overlay" data-a="${m.type==="season"?"":"closemodal"}" data-self="1"><div class="modal" role="dialog" aria-modal="true">${inner}</div></div>`;
+  root.innerHTML=`<div class="overlay" data-a="${m.type==="season"||m.type==="dilemma"?"":"closemodal"}" data-self="1"><div class="modal" role="dialog" aria-modal="true">${inner}</div></div>`;
 }
 
 /* ----- Actions ----- */
@@ -1661,8 +1940,25 @@ const A={
   release:d=>{const h=hero(+d.id); S.gold-=h.sal*2; leaveGuild(h,"renvoi"); UI.modal=null; save(); toast(`${h.name} a quitté la guilde.`);},
   toggle:d=>{const id=+d.id; if(S.lineup.includes(id))S.lineup=S.lineup.filter(x=>x!==id); else if(S.lineup.length<4)S.lineup.push(id); else toast("Quatre héros maximum par descente."); save();},
   tactic:d=>{S.tactic=d.k; save();},
-  launch:()=>{const dg=curDg(); const res=playWeek(); Object.assign(FX,{lastIdx:-1,parts:[],scroll:0,target:0,prop:null,act:{},shake:0,flash:0}); UI.replay={res,i:0,speed:1,dgName:dg.name,cond:dg.cond}; render(); UI.replay.timer=setTimeout(tickReplay,700); return "norender";},
+  launch:()=>{if(S.dilemma){UI.modal={type:"dilemma"};return;} while(S.day<6){advanceDay(); if(S.dilemma){UI.modal={type:"dilemma"}; toast("Une décision vous attend avant la descente."); return;}} const dg=curDg(); const res=playWeek(); Object.assign(FX,{lastIdx:-1,parts:[],scroll:0,target:0,prop:null,act:{},shake:0,flash:0}); UI.replay={res,i:0,speed:1,dgName:dg.name,cond:dg.cond}; render(); UI.replay.timer=setTimeout(tickReplay,700); return "norender";},
   pickdg:d=>{S.dgPick=+d.i; save();},
+  nextday:()=>{advanceDay(); if(S.dilemma)UI.modal={type:"dilemma"};},
+  skipdays:()=>{while(S.day<6){advanceDay(); if(S.dilemma){UI.modal={type:"dilemma"};return;}} UI.tab="descente";},
+  opendil:()=>{UI.modal={type:"dilemma"};},
+  dchoice:d=>{const D=S.dilemma; if(!D)return; const def=DIL.find(x=>x.id===D.id); if(dilValid(D)&&S.gold<optCost(def.opts[+d.i])){toast("Pas assez d'or pour ce choix.");return;} const res=dilValid(D)?def.opts[+d.i].f(D.ctx):"La situation s'est réglée d'elle-même."; news(`${def.t} : ${res}`,"me"); chron("choice",`${def.t}. ${res}`); S.dilemma=null; UI.modal={type:"dresult",t:def.t,txt:res}; save();},
+  dclear:()=>{S.dilemma=null; UI.modal=null; save();},
+  guild:d=>{UI.modal={type:"guild",id:+d.id};},
+  view:d=>{UI.view=d.v;},
+  cf:d=>{UI.cf=d.k;},
+  sort:d=>{if(UI.sortK===d.k)UI.sortD=-(UI.sortD||-1); else {UI.sortK=d.k; UI.sortD=d.k==="name"||d.k==="cls"?1:-1;}},
+  cmp:d=>{const id=+d.id; UI.cmp=UI.cmp||[]; if(UI.cmp.includes(id))UI.cmp=UI.cmp.filter(x=>x!==id); else {UI.cmp.push(id); if(UI.cmp.length>2)UI.cmp.shift();} if(UI.cmp.length===2)UI.modal={type:"compare",a:UI.cmp[0],b:UI.cmp[1]};},
+  cmpclear:()=>{UI.cmp=[];},
+  equip:d=>{const it=S.inventory.find(x=>x.id===+d.id); if(!it)return; const sel=$("#eq-"+it.id); const v=sel?sel.value:""; if(!v){if(it.holder!=null)unequip(hero(it.holder)); else it.holder=null; toast(`${it.name} retourne au coffre.`);} else {const h=hero(+v); equip(h,it.id); toast(`${it.name} confié${ag(h,"","")} à ${h.name}.`);} save();},
+  forge:d=>{const it=S.inventory.find(x=>x.id===+d.id); if(!it||it.lvl>=2||S.gold<forgeCost(it))return; S.gold-=forgeCost(it); it.lvl++; toast(`${it.name} passe à +${it.lvl}.`); save();},
+  sellrelic:d=>{const it=S.inventory.find(x=>x.id===+d.id); if(!it)return; if(it.holder!=null)unequip(hero(it.holder)); S.gold+=sellValue(it); S.inventory=S.inventory.filter(x=>x!==it); toast(`${it.name} vendue.`); save();},
+  buyrelic:()=>{const it=S.relicShop; if(!it||S.gold<it.price)return; S.gold-=it.price; delete it.price; S.inventory.push(it); S.relicShop=null; toast(`${it.name} rejoint le coffre.`); save();},
+  hire:d=>{const c=S.staffPool[d.k]; if(!c||S.gold<c.sal*3)return; S.gold-=c.sal*3; S.staff[d.k]={name:c.name,sal:c.sal,sex:c.sex}; delete S.staffPool[d.k]; news(`${c.name} devient ${STAFF[d.k].n.toLowerCase()} de ${pg().name}.`,"me"); save();},
+  fire:d=>{const c=S.staff[d.k]; if(!c)return; delete S.staff[d.k]; news(`${c.name} quitte son poste de ${STAFF[d.k].n.toLowerCase()}.`,"me"); save();},
   forfeit:()=>{S.lineup=[]; return A.launch();},
   speed:()=>{const R=UI.replay; R.speed=R.speed===3?1:R.speed+1;},
   skip:()=>{const R=UI.replay; clearTimeout(R.timer); R.i=R.res.T.length-1;},
@@ -1705,13 +2001,14 @@ function fallbackCopy(text,msg){
 if(typeof document!=="undefined"){
   document.addEventListener("click",e=>{
     const el=e.target.closest("[data-a]"); if(!el)return;
+    if(el.tagName==="SELECT")return;
     if(el.dataset.self&&e.target!==el)return;
     const fn=A[el.dataset.a]; if(!fn)return;
     const r=fn(el.dataset); if(r!=="norender")render();
   });
   document.addEventListener("keydown",e=>{
     if((e.key==="Enter"||e.key===" ")&&e.target.matches("[role=button][data-a]")){e.preventDefault(); e.target.click();}
-    if(e.key==="Escape"&&UI.modal&&UI.modal.type!=="season"){UI.modal=null;render();}
+    if(e.key==="Escape"&&UI.modal&&UI.modal.type!=="season"&&UI.modal.type!=="dilemma"){UI.modal=null;render();}
   });
   document.addEventListener("change",e=>{if(e.target.id==="focus"){S.focus=e.target.value;save();}});
   try{FX.reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;}catch(e){}
